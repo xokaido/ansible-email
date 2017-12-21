@@ -1,0 +1,141 @@
+- name: Install Dovecot and related packages
+  apt: pkg={{ item }} update_cache=yes state=installed
+  with_items:
+    - dovecot-core
+    - dovecot-imapd
+    - dovecot-lmtpd
+    - dovecot-managesieved
+    - dovecot-mysql
+    - dovecot-pop3d
+  when: ansible_os_family == "Debian"
+
+- name: Install Dovecot and related packages
+  yum: name={{ item }} state=present
+  with_items:
+    - dovecot
+    - dovecot-mysql
+  when: 
+    - ansible_distribution == "CentOS"
+
+
+
+- name: Create vmail group
+  group: name=vmail state=present gid=5000
+
+- name: Create vmail user
+  user: name=vmail group=vmail state=present uid=5000 home=/home/vmail shell=/usr/sbin/nologin
+
+- name: Ensure mail domain directories are in place
+  file: state=directory path=/home/vmail/{{ item.name }} owner=vmail group=dovecot mode=0770
+  with_items: '{{ domains }}'
+
+- name: Ensure mail directories are in place
+  file: state=directory path=/home/vmail/{{ item.name }}/{{ item.email }} owner=vmail group=dovecot
+  with_items: '{{ domains }}' 
+
+- name: Copy PEM files
+  copy: src=dovecot/ dest=/etc/pki/dovecot 
+
+- name: Copying Dovecot configuration files in place
+  template: src={{ item.src }}  dest={{ item.dir }}/{{ item.dest }} owner=dovecot group=dovecot mode=0644
+  with_items:
+    - src: etc_dovecot_conf.d_10-auth.conf.j2
+      dest: 10-auth.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_10-director.conf.j2
+      dest: 10-director.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_10-logging.conf.j2
+      dest: 10-logging.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_10-mail.conf.j2
+      dest: 10-mail.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_10-master.conf.j2
+      dest: 10-master.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_10-ssl.conf.j2
+      dest: 10-ssl.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_15-lda.conf.j2
+      dest: 15-lda.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_15-mailboxes.conf.j2
+      dest: 15-mailboxes.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_20-imap.conf.j2
+      dest: 20-imap.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_20-lmtp.conf.j2
+      dest: 20-lmtp.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_20-pop3.conf.j2
+      dest: 20-pop3.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_90-acl.conf.j2
+      dest: 90-acl.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_90-plugin.conf.j2
+      dest: 90-plugin.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_90-quota.conf.j2
+      dest: 90-quota.conf
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-checkpassword.conf.ext.j2
+      dest: checkpassword.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-deny.conf.ext.j2
+      dest: deny.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-dict.conf.ext.j2
+      dest: auth-dict.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-ldap.conf.ext.j2
+      dest: ldap.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-master.conf.ext.j2
+      dest: auth-master.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-passwdfile.conf.ext.j2
+      dest: auth-passwdfile.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-sql.conf.ext.j2
+      dest: sql.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-static.conf.ext.j2
+      dest: auth-static.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-system.conf.ext.j2
+      dest: auth-system.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_conf.d_auth-vpopmail.conf.ext.j2
+      dest: auth-vpopmail.conf.ext
+      dir: /etc/dovecot/conf.d
+    - src: etc_dovecot_dovecot.conf.j2
+      dest: dovecot.conf
+      dir: /etc/dovecot
+    - src: etc_dovecot_dovecot-sql.conf.ext.j2
+      dest: dovecot-sql.conf.ext
+      dir: /etc/dovecot
+  notify: restart dovecot
+
+- name: Ensure correct permissions on Dovecot config directory
+  file: state=directory path=/etc/dovecot group=dovecot owner=vmail mode=0770 recurse=yes
+  notify: restart dovecot
+
+# - name: Set firewall rules for dovecot
+#   ufw: rule=allow port={{ item }} proto=tcp
+#   with_items:
+#     - imaps
+#     - pop3s
+#   tags: ufw
+
+# - name: Update post-certificate-renewal task
+#   copy:
+#     content: "#!/bin/bash\n\nservice dovecot restart\n"
+#     dest: /etc/letsencrypt/postrenew/dovecot.sh
+#     mode: 0755
+#     owner: root
+#     group: root
+    
+

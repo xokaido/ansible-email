@@ -1,0 +1,90 @@
+---
+- name: Create pre-seed values for Postfix configuration
+  template: >
+    src=postfix_selections.j2
+    dest=/tmp/postfix_selections
+    mode=0644 owner=root group=root
+  when: ansible_os_family == "Debian"
+
+
+- name: Install postfix
+  apt: name={{ item }} state=latest
+  with_items: 
+    - 'ca-certificates'
+    - 'heirloom-mailx'
+    - 'libsasl2-2'
+    - 'libsasl2-modules'
+    - 'mailutils'
+    - 'postfix'
+    - 'postfix-mysql'
+  when: ansible_os_family == "Debian"
+
+- name: Disabling the postfix from Base repository
+  lineinfile: 
+    dest: /etc/yum.repos.d/CentOS-Base.repo 
+    insertafter: '\[base\]'
+    line: 'exclude=postfix'
+  when:
+    - ansible_distribution == "CentOS"
+
+- name: Add EPEL repository 
+  yum_repository:
+    name: epel
+    description: EPEL YUM repo
+    baseurl: https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+    gpgcheck: no
+
+- name: Disabling the postfix from Base repository
+  lineinfile: 
+    dest: /etc/yum.repos.d/CentOS-Base.repo 
+    insertafter: '\[updates\]'
+    line: 'exclude=postfix'
+  when:
+    - ansible_distribution == "CentOS"
+
+
+- name: Install postfix
+  yum: 
+    name: "{{ item }}"
+    state: present
+    enablerepo: centosplus 
+  with_items: 
+    - 'postfix'
+  when: 
+   - ansible_distribution == "CentOS"
+
+
+- name: Copying DB dump for mail
+  template: src=dump.sql dest=/tmp/dump.sql
+
+- name: Importing data into the mail DB
+  mysql_db:
+    name: "{{ mail_db_database }}"
+    state: import
+    target: /tmp/dump.sql
+
+# - name: Importing data into the mail DB
+#   shell: mysql -u root -p{{ item.pass }} "{{ mail_db_database }}"  < /tmp/dump.sql
+#   with_items: "{{ db }}"
+
+
+- name: Copying appropriate config files
+  template: src={{ item.src }} dest={{ item.dir }}/{{ item.dest }} owner=postfix group=postfix 
+  with_items: 
+    - src: etc_postfix_{{ ansible_os_family }}_main.cf.j2
+      dest: main.cf
+      dir: /etc/postfix
+    - src:  etc_postfix_mariadb-valias.cf.j2
+      dest: mariadb-valias.cf
+      dir: /etc/postfix
+    - src: etc_postfix_mariadb-vdomains.cf.j2
+      dest: mariadb-vdomains.cf
+      dir: /etc/postfix
+    - src: etc_postfix_mariadb-vusers.cf.j2
+      dest: mariadb-vusers.cf
+      dir: /etc/postfix
+    - src: etc_postfix_master.cf.j2
+      dest: master.cf
+      dir: /etc/postfix
+  notify: restart postfix
+

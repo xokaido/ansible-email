@@ -1,0 +1,19 @@
+---
+domains:
+  - name: somedomain.com
+    email: info@somedomain.com
+
+db:
+  - pass: Ra7q7gAUeaepD7nL 
+    user: root
+
+mail_db_hostname: localhost
+mail_db_database: mails
+mail_db_username: mails_user
+mail_db_password: t1X0766uIK8Wh
+
+mail: 
+  - hostname: localhost
+    database: mails
+    username: mails_user
+    password: t1X0766uIK8Wh
