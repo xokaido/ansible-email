@@ -14,7 +14,7 @@ The usage is like this:
 
 ./run.sh
 
-
+For usernames, databases and passwords check the ./group_vars/all file.
 
 
 Please report problems to xokaido at gmail  com
