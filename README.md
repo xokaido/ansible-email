@@ -12,7 +12,7 @@ contains correct server addresses
 
 The usage is like this:
 
-./run.sh
+```./run.sh```
 
 For usernames, databases and passwords check the ```./group_vars/all``` file.
 
