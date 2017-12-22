@@ -1,7 +1,8 @@
 ---
 domains:
-  - name: somedomain.com
-    email: info@somedomain.com
+  - name: mea.ge
+    email: info@mea.ge
+    pass: 9tOOuU96M1l67
 
 db:
   - pass: Ra7q7gAUeaepD7nL 

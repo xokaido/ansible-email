@@ -54,15 +54,6 @@
    - ansible_distribution == "CentOS"
 
 
-- name: Copying DB dump for mail
-  template: src=dump.sql dest=/tmp/dump.sql
-
-- name: Importing data into the mail DB
-  mysql_db:
-    name: "{{ mail_db_database }}"
-    state: import
-    target: /tmp/dump.sql
-
 # - name: Importing data into the mail DB
 #   shell: mysql -u root -p{{ item.pass }} "{{ mail_db_database }}"  < /tmp/dump.sql
 #   with_items: "{{ db }}"
@@ -83,7 +74,7 @@
     - src: etc_postfix_mariadb-vusers.cf.j2
       dest: mariadb-vusers.cf
       dir: /etc/postfix
-    - src: etc_postfix_master.cf.j2
+    - src: etc_postfix_master_{{ ansible_os_family }}.cf.j2
       dest: master.cf
       dir: /etc/postfix
   notify: restart postfix

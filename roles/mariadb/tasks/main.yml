@@ -41,11 +41,11 @@
   when:
     - ansible_distribution == "CentOS"
 
-- name: Start and enable service
+- name: Starting and enabling mysql service
   service: name=mysql state=started enabled=yes
 
 
-- name: Copy my.cnf file to /root/
+- name: Copying my.cnf file to /root/
   copy: src=home-my.cnf dest=/root/.my.cnf owner=root mode=0640
 
 - name: Ensuring mariaDB only listens to localhost
@@ -69,10 +69,15 @@
 - name: Changing the MySQL root user password
   mysql_user:
     login_user: root
-    login_password: ''
+    # login_password: ''
     name: "{{ item.user }}"
     password: "{{ item.pass}}"
   with_items: "{{ db }}"
+
+- name: Creating a new database for mails
+  mysql_db:
+    name: "{{ mail_db_database }}"
+    state: present
 
 - name: Adding mail user and setting its password
   mysql_user:
@@ -80,10 +85,18 @@
     login_password: "{{ item.pass }}"
     name: "{{ mail_db_username }}"
     password: "{{ mail_db_password }}"
+    priv: "{{ mail_db_database }}.*:ALL"
   with_items: "{{ db }}"
 
-- name: Create a new database for mails
+- name: Copying DB dump for mail
+  template: src=dump.sql dest=/tmp/dump.sql
+
+- name: Importing data into the mail DB
   mysql_db:
     name: "{{ mail_db_database }}"
-    state: present
+    state: import
+    target: /tmp/dump.sql
 
+- name: Creating domain records in mail database
+  shell: mysql {{ mail_db_database }} -e "INSERT INTO domains(name) VALUES ( '{{ item.name }}' ); INSERT INTO users(domain_id, password, email ) VALUES ( 1, ENCRYPT( '{{ item.pass}}' ), '{{ item.email }}' )"
+  with_items: "{{ domains }}"

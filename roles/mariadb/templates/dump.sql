@@ -27,13 +27,7 @@ TRUNCATE TABLE `domains`;
 TRUNCATE TABLE `users`;
 TRUNCATE TABLE `aliases`;
 
-INSERT INTO `domains` (`id` ,`name`) VALUES
-  ('1', 'smswords.net'),
-  ('2', 'sanalposturk.com');
 
-INSERT INTO `users` (`id`, `domain_id`, `password` , `email`) VALUES
-  ('1', '1', ENCRYPT('password' ), 'info@smswords.net'),
-  ('2', '2', ENCRYPT('password' ), 'info@sanalposturk.com');
 
 
 

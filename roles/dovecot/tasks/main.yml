@@ -119,6 +119,10 @@
       dir: /etc/dovecot
   notify: restart dovecot
 
+- name: Copying Dovecot configuration files in place
+  template: src=etc_dovecot_dovecot_RedHat.conf.j2  dest=/etc/dovecot/dovecot.conf owner=dovecot group=dovecot mode=0644
+  when: ansible_os_family == 'RedHat'
+
 - name: Ensure correct permissions on Dovecot config directory
   file: state=directory path=/etc/dovecot group=dovecot owner=vmail mode=0770 recurse=yes
   notify: restart dovecot
