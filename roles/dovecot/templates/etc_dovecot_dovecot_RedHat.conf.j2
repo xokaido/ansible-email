@@ -1,23 +1,25 @@
+#
 # auth_verbose = yes
 # auth_verbose_passwords = no
 # auth_debug = yes
 # auth_debug_passwords = yes
 # mail_debug = yes
 
+!include conf.d/*.conf
 
-protocols = imap pop3
+protocols = imap pop3 lmtp
 log_timestamp = "%Y-%m-%d %H:%M:%S "
 mail_location = maildir:/home/vmail/%d/%n/Maildir
 
 ssl_cert = </etc/pki/dovecot/certs/dovecot.pem
 ssl_key = </etc/pki/dovecot/private/dovecot.pem
 
-namespace {
-    type = private
-    separator = .
-    prefix = INBOX.
-    inbox = yes
-}
+# namespace {
+#     type = private
+#     separator = .
+#     prefix = INBOX.
+#     inbox = yes
+# }
 
 service auth {
     unix_listener auth-master {
@@ -53,12 +55,19 @@ passdb {
     args = /etc/dovecot/dovecot-sql.conf.ext
 }
 
-userdb {
-    driver = sql
-    args = /etc/dovecot/dovecot-sql.conf.ext
-}
+ userdb {
+     driver = sql
+     args = /etc/dovecot/dovecot-sql.conf.ext
+ }
 
-userdb {                                                               
-      driver = static
-      args = uid=5000 gid=5000 home=/home/vmail/%d/%n allow_all_users=yes
-}  
+ userdb {                                                               
+       driver = static
+       args = mail_uid=5000 mail_gid=5000 uid=5000 gid=5000 home=/home/vmail/%d/%n allow_all_users=yes
+ }  
+
+protocol lmtp {
+ userdb {                                                               
+       driver = static
+       args = mail_uid=5000 mail_gid=5000 uid=5000 gid=5000 home=/home/vmail/%d/%n allow_all_users=yes
+ }  
+}
